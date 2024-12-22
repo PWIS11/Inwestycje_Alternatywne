@@ -1,0 +1,74 @@
+---
+title: "\\textbf{\\textcolor{mycolor}{Budowanie portfela inwestycyjnego}}"
+author: "Autor"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    latex_engine: xelatex
+header-includes:
+   - \usepackage{xcolor}
+   - \usepackage{titlesec}
+   - \definecolor{mycolor}{HTML}{1E90FF}
+   - \titleformat{\section}[block]{\normalfont\Large\bfseries\color{mycolor}}{}{0em}{}
+
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(quantmod)
+```
+
+# **1. Wstęp**
+Celem niniejszego projektu jest skonstruowanie i analiza portfela inwestycyjnego, obejmującego jedną spółkę notowaną na polskim rynku (wchodzącą w skład indeksu WIG30) oraz trzy inwestycje alternatywne, reprezentujące różne kategorie. Wybrane aktywa pozwolą zbudować zróżnicowany portfel, uwzględniający zarówno tradycyjne akcje, jak i mniej standardowe instrumenty finansowe, charakteryzujące się odmiennymi profilami ryzyka i potencjalnymi stopami zwrotu.
+
+W ramach projektu przeprowadzone zostaną następujące analizy:
+\begin{itemize}
+\item Obliczenie podstawowych statystyk opisowych dla wybranych inwestycji.
+\item Wyznaczenie stóp zwrotu, ryzyka oraz efektywności portfela w dwóch scenariuszach:
+  \begin{itemize}
+   \item minimalnego ryzyka,
+   \item maksymalnej efektywności.
+  \end{itemize}
+   
+\item Obliczenie współczynników korelacji pomiędzy analizowanymi inwestycjami.
+\item Ocena efektywności portfela za pomocą różnych wskaźników finansowych.
+\item Przedstawienie zbioru możliwości inwestycyjnych, w tym portfela o minimalnym ryzyku, maksymalnej efektywności oraz portfeli jednoelementowych.
+
+\end{itemize}
+
+
+# **2. Wybrane inwestycje**
+Portfel inwestycyjny będzie składał się z następujących aktywów:
+
+1. **Spółka z WIG30:**  
+   - **CCC S.A.** – lider rynku obuwniczego w Polsce, znany z dynamicznego rozwoju w regionie Europy Środkowo-Wschodniej. Wybrano ją jako reprezentanta rynku akcji notowanego w indeksie WIG30.
+
+2. **Inwestycje alternatywne:**
+   - **Bitcoin (BTC-USD)**: Kryptowaluta, która zyskała na popularności jako alternatywna inwestycja, uważana przez wielu za "cyfrowe złoto". Jest to inwestycja charakteryzująca się wysoką zmiennością, ale także dużym potencjałem wzrostu.
+   - **Nieruchomości historyczne:** Reprezentowane przez Vanguard Real Estate ETF (`VNQ`), który odzwierciedla inwestycje w nieruchomości, w tym historyczne, na rynku amerykańskim.
+   - **LVMH Moet Hennessy Louis Vuitton SE (`MC.PA`):** Światowy lider rynku dóbr luksusowych, reprezentujący kategorię inwestycji związanych z markami premium.
+   
+
+```{r, echo=FALSE, eval=TRUE, results='asis'}
+# Pobranie danych dla CCC S.A. z Yahoo Finance
+getSymbols("CCC.WA", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+# Zmiana nazw kolumn w obiekcie xts
+colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+
+
+# Pobranie danych dla bitcoin
+getSymbols("BTC-USD", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+
+# Pobranie danych dla ETF na nieruchomości
+getSymbols("VNQ", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+
+# Pobranie danych dla LVMH
+getSymbols("MC.PA", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+```
+
+
