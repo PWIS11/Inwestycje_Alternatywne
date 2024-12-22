@@ -1,0 +1,92 @@
+---
+title: "Analiza Techniczna"
+output: html_document
+date: "2024-12-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(readxl) 
+library(kableExtra)
+library(binom)
+library(vcd)
+library(DescTools)
+library(quantmod)
+library(TTR)
+library(forecast)
+library(fpp)
+```
+
+```{r}
+# Pobieranie danych [PKN.df] ze strony stooq.pl za pomocą read.csv 
+dane <- read.csv("https://stooq.pl/q/d/l/?s=ccc&i=d") 
+
+colnames(dane) <- c("Date", "Open", "High", "Low", "Close", "Volume")
+
+daneccc <- xts(x=dane[,-1], order.by=as.Date(dane[,1]))
+daneccc <- daneccc["2023-01-01::2024-12-31"]
+
+
+```
+
+# Krzywa MACD
+
+```{r, fig.height=8, fig.width=8}
+macd <- MACD(daneccc$Close, nFast = 12, nSlow = 26, 
+             nSig = 9, maType = SMA, percent = FALSE)
+
+plot(daneccc$Close, type = "l", 
+     col = "peachpuff2", 
+     ylab = "Price", xlab = "Date",
+     main = "Cena zamknięcia CCC")  
+  lines(macd$macd, col = "lightcoral", lwd = 2)
+lines(macd$signal, col = "steelblue1", lwd = 2) 
+addLegend("topright", on=1,
+          legend.names = c("Cena zamknięcia", "MACD", "SIGNAL"),
+          lty=1, lwd=2,
+          col=c("peachpuff2", "lightcoral", "steelblue1"))
+
+
+```
+
+
+
+
+```{r}
+chartSeries(daneccc$Close, name = "Wstęga Bollingera", show.grid = TRUE,theme = chartTheme("white"),bar.type = "hlc")
+addBBands(n = 20, sd = 2, ma = "SMA", draw = 'bands')
+
+
+legend("topright", legend = c("Close Price", "Bollinger Bands"), lty = c(1, 2), col = c("green", "red"))
+
+```
+
+
+```{r}
+ccc_sts <- stoch(daneccc$Close, nFastK =  14, nFastD = 3, nSlowD = 3)
+
+
+plot(daneccc$Close, col = "lightblue")
+lines(ccc_sts$fastK*100, col = "pink", lwd = 2)
+lines(ccc_sts$fastD*100, col = "green", lwd = 2)
+addLegend("topright", on=1, legend.names = c("Cena zamknięcia", "fastK", "fastD"),
+          lty = 1, lwd=2,
+          col = c("lightblue", "pink", "green")
+          )
+
+# Dokładny widok oscylatorów
+plot(ccc_sts$fastK*100, col = "pink", ylab = "wskaźniki z funkcji",ylim=c(0, 100))
+lines(ccc_sts$fastD*100, col = "green", lwd = 2)
+
+addLegend("topright", on=1, legend.names = c("fastK", "fastD"),
+          lty = 1, lwd=2,
+          col = c("pink", "green")
+          )
+
+
+```
+
+
+
