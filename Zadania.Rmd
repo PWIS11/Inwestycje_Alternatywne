@@ -89,4 +89,640 @@ addLegend("topright", on=1, legend.names = c("fastK", "fastD"),
 ```
 
 
+# poniżej wstawiam zadania z list które chat wypluł 
+
+## Lista 6
+
+```{r}
+# LISTA 6 MRF
+
+################################################################################
+#
+#                     ZADANIE   6.1
+#
+################################################################################
+# Korzystając z danych z pliku PortfolioScenario.csv
+#
+# (a) oblicz wariancję i oczekiwany zwrot z portfela złożonego z tych akcji 
+#     z wagami w_1=0.6,  w_2=0.4.
+# (b) znajdź wagi portfela o minimalnej wariancji złożonego z tych akcji,
+#     gdy krótka sprzedaż jest dozwolona,
+# (c) znajdź wagi portfela o minimalnej wariancji złożonego z tych akcji,
+#     gdy krótka sprzedaż jest niedozwolona.
+################################################################################
+
+# wczytanie pliku do ramki danych [ps]
+ps <- read.csv("PortfolioScenario.csv")
+
+####################################################
+# oczekiwane zwroty [e1,e2] dla poszczególnych akcji
+e1 <- sum(ps$Probability * ps$K1)   # 0.08
+e2 <- sum(ps$Probability * ps$K2)   # 0.27
+
+####################################################
+# wariancje zwrotów dla poszczególnych akcji
+var1 <- sum(ps$Probability * (ps$K1 - e1)**2)  # 0.0176
+var2 <- sum(ps$Probability * (ps$K2 - e2)**2)  # 0.0241
+
+####################################################
+# kowariancja
+cov12 <- sum( ps$Probability * ((ps$K1-e1) * (ps$K2-e2)) ) # 0.0204
+
+####################################################
+# a)
+w1 <- 0.6
+w2 <- 0.4
+
+# oczekiwany zwrot portfela 
+ev <- w1 * e1 + w2 * e2  # 0.156
+
+# wariancja zwrotów z portfela
+varv <- w1**2 * var1 + w2**2 * var2 + 2*w1*w2*cov12 # 0.019984
+
+####################################################
+# b) krótka sprzedaż jest dozwolona (wagi moga byc ujemne)
+rho <- cov12/sqrt(var1 * var2) # 0.9905...
+
+# dla wersji rho = +1
+w.61b.1 <- sqrt(var2) / (sqrt(var2) - sqrt(var1))
+w.61b.2 <- -sqrt(var1) / (sqrt(var2) - sqrt(var1))
+
+# dla wersji -1 < rho < 1
+s0 <- (var1 - rho*sqrt(var1 * var2)) / (var1 + var2 - 2*rho*sqrt(var1*var2))
+w.61b.1.alt <- 1-s0
+w.61b.2.alt <- s0
+
+# porownanie wariancji w obu wersjach
+
+f <- function(w1){
+  w1**2 * var1 + (1-w1)**2 * var2 + 2*w1*(1-w1)*cov12
+}
+
+f.b     <- f(w1=w.61b.1)         # 0.01576..
+f.b.alt <- f(w1=w.61b.1.alt)     # 0.0088...
+
+
+####################################################
+# c) krótka sprzedaż NIE jest dozwolona (wagi NIE moga byc ujemne)
+
+# dla wersji rho = +1
+w1.c <- 1 # bo wariancja akcji pierwszej jest mniejsza
+w2.c <- 0
+
+# dla wersji -1 < rho < 1
+w.61c.1 <- ifelse(var1<var2,1,0) # "wszystko" (1) w akcje o mniejszej wariancji
+w.61c.2 <- 1- w.61c.1            # oraz "nic" (0) w akcje o wiekszej wariancji
+
+
+f.c <- f(w1=w.61c.1)  # 0.0176 taka jak var1
+
+################################################################################
+#
+#                     ZADANIE   6.2
+#
+################################################################################
+# Dla dwóch wybranych spółek giełdowych z pliku Notowania.csv wyznacz
+#
+# (a) oczekiwane zwroty i odchylenia standardowe zwrotów,
+# (b) oczekiwane zwroty i odchylenia standardowe zwrotów z portfela 
+#     składającego się z tych akcji z wagami
+#
+#     (0,1), (0.1,0.9), (0.2,0.8),..., (0.8,0.2),(0.9,0.1), (1,0).
+#
+# (c) oczekiwane zwroty i odchylenia standardowe zwrotów z portfela 
+#     dopuszczając krótką sprzedaż tj. składającego się z tych akcji z wagami
+#
+#     (-1.5,2.5), (-1.4,2.4),..., (1.4,-0.4),(1.5,-0.5).
+#
+# (d) wykonaj wykresy oczekiwanej stopy zwrotu z portfela 
+#     w zalezności od ryzyka (mierzonego odchyleniem standardowym) 
+#     dla portfeli z podpunktów (b) oraz (c).
+################################################################################
+
+# wczytanie pliku Notowania.csv do ramki danych [df]
+df <- read.csv("Notowania.csv")
+
+# zadanie wykonamy dla PKN oraz KGHM
+firma.62.1<- df$KGHM
+firma.62.2 <- df$PKN
+n.62 <- length(firma.62.1)
+
+# wyznaczamy zwroty
+zwroty.62.1 <- 100*(firma.62.1[-1]/firma.62.1[-n.62]-1) 
+zwroty.62.2 <- 100*(firma.62.2[-1]/firma.62.2[-n.62]-1) 
+zwroty.62 <- cbind(zwroty.62.1, zwroty.62.2)
+
+####################################################
+# a)
+
+# oczekwane zwroty
+e.62 <- apply(X = zwroty.62, MARGIN = 2, FUN = mean)
+
+# odchylenia standardowe zwrotów
+sd.62 <- apply(X = zwroty.62, MARGIN =2, FUN = sd)
+
+# macierz kowariancji zwrotów
+C.62 <- cov(zwroty.62)
+
+####################################################
+# b)
+w.62b.1 <- seq(0, 1, 0.1)
+w.62b.2 <- 1-w.62b.1
+n.62b <- length(w.62b.1)
+
+# puste wektory do uzupelnienia
+e.62b <- numeric(n.62b) 
+sd.62b <- numeric(n.62b)
+
+# i teraz je uzupelniamy oczekiwanymi zwrotami i odchyleniami standardowymi
+for (k in 1:n.62b) {
+  w  <- c(w.62b.1[k], w.62b.2[k])
+  mu <- e.62
+  e.62b[k] <- t(mu) %*% w
+  sd.62b[k] <- sqrt(t(w) %*% C.62 %*% w)
+}
+
+####################################################
+# c)
+
+w.62c.1 <- seq(-1.5, 1.5, 0.1)
+w.62c.2 <- 1-w.62c.1
+n.62c <- length(w.62c.1)
+
+# puste wektory do uzupelnienia
+e.62c <- numeric(n.62c) 
+sd.62c <- numeric(n.62c)
+
+# i teraz je uzupelniamy oczekiwanymi zwrotami i odchyleniami standardowymi
+for (k in 1:n.62c) {
+  w  <- c(w.62c.1[k], w.62c.2[k])
+  mu <- e.62
+  e.62c[k] <- t(mu) %*% w
+  sd.62c[k] <- sqrt(t(w) %*% (C.62 %*% w))
+}
+
+####################################################
+# d)
+
+# plot z podpunktu b)
+plot(x=sd.62b, y=e.62b, type="l", col="red", xlab="sd", ylab="mean")
+
+# plot z podpunktu c)
+plot(x=sd.62c, y=e.62c, type="l", col="blue", xlab="sd", ylab="mean")
+
+# oba ploty razem na jednym rysunku
+plot(x=sd.62c, y=e.62c, type="l", col="blue")#, xlim=c(0,30), ylim=c(0,0.11))
+lines(x=sd.62b, y=e.62b, type="l", col="red", lwd=2,xlab="sd", ylab="mean")
+
+
+################################################################################
+#
+#                     ZADANIE   6.3
+#
+################################################################################
+# Dla dwóch wybranych spółek giełdowych z pliku Notowania.csv 
+# wyznacz portfel o minimalnej wariancji składający się z tych dwóch akcji
+#
+#(a) nie dopuszczając krótkiej sprzedaży,
+#(b) dopuszczajac krótką sprzedaż.
+################################################################################
+
+# rho # 0.4282..
+rho <- C.62[1,2] / sqrt(C.62[1,1] * C.62[2,2]) # 0.4282...
+
+# s0 # 0.615017...
+s0 <- (C.62[1,1] - rho * sqrt(C.62[1,1] * C.62[2,2])) / (C.62[1,1] + C.62[2,2] - 2 * rho * sqrt(C.62[1,1] * C.62[2,2]))
+
+# optymalne wagi podpunkt a (nie mogą byc ujemne)
+w.63a.1 <- 1-s0
+w.63a.2 <- s0
+
+# optymalne wagi podpunkt b (moga byc ujemne)
+w.63b.1 <- 1-s0
+w.63b.2 <- s0
+
+# z gotowego wzoru z twierdzenia 1
+u <- rep(1,2) # bo mamy 2 aktywa w portfelu
+C.inv <- solve(C.62)
+w.63.tw1.licznik <-  t(u) %*% C.inv
+w.63.tw1.mianownik <-  c(t(u) %*% C.inv %*% u)
+w63.tw1 <- w.63.tw1.licznik / w.63.tw1.mianownik # 0.385 oraz 0.615
+
+################################################################################
+#
+#                     ZADANIE   6.4
+#
+################################################################################
+# Na początku:
+#
+# - umieść plik NotowaniaKwartalne.csv (zawierającego kursy akcji 7 spółek 
+#   notowanych na GPW na koniec każdego kwartału od 31/12/2013 do 31/12/2018)
+#   w katalogu roboczym,
+#
+# - zainstaluj pakiet quadprog,
+#
+# - uruchom załączony kod OptimalPortfolio.
+#
+# Następnie:
+#
+# (a) objaśnij działanie kodu,
+#
+# (b) objaśnij, co jest przedstawione na wykresie utworzonym przez 
+# kod OptimalPortfolio,
+#
+# (c) podaj obliczone w programie wartości:
+#
+# - oczekiwanego zwrotu,
+# - odchylenia standardowego,
+# - współczynnika Sharpe’a,
+#
+# oraz wag dla
+#
+# - portfela o minimalnej wariancji,
+# - portfela największym współczynniku Sharpe’a.
+#
+# (d) zmodyfikuj kod tak, aby znaleźć portfele optymalne 
+#     (bez krótkiej sprzedaży) bazujące na wszyskich 7 akcjach 
+#     (może się okazać, że wagi przy niektórych z nich są równa 0),
+#
+# (e) zmodyfikuj kod tak, aby znaleźć portfele optymalne 
+#     bez ograniczenia na krótką sprzedaż.
+################################################################################
+
+################################################################################
+#
+#                         OptimalPortfolio
+#
+
+
+library(quadprog)
+
+NK=read.csv("NotowaniaKwartalne.csv", header=TRUE)
+n=21
+attach(NK)
+
+PZUZwrot=100*(PZU[-1]/PZU[-n]-1) 
+PKNZwrot=100*(PKN[-1]/PKN[-n]-1)
+CDRZwrot=100*(CDR[-1]/CDR[-n]-1) 
+LPPZwrot=100*(LPP[-1]/LPP[-n]-1)
+CEZZwrot=100*(CEZ[-1]/CEZ[-n]-1) 
+CPSZwrot=100*(CPS[-1]/CPS[-n]-1) 
+KERZwrot=100*(KER[-1]/KER[-n]-1) 
+
+R=cbind(PKNZwrot,CEZZwrot,KERZwrot)
+
+mean_vect = apply(R,2,mean)
+cov_mat = cov(R)
+sd_vect = sqrt(diag(cov_mat))
+
+Amat = cbind(rep(1,3),mean_vect,diag(1,nrow=3))
+
+muP = seq(min(mean_vect)+.01,max(mean_vect)-.01,length=300)  
+sdP = muP 
+weights = matrix(0,nrow=300,ncol=3) 
+
+for (i in 1:length(muP)){
+  bvec = c(1,muP[i],rep(0,3))
+  result = 
+    solve.QP(Dmat=2*cov_mat,dvec=rep(0,3),Amat=Amat,bvec=bvec,meq=2)
+  sdP[i] = sqrt(result$value)
+  weights[i,] = result$solution
+}
+
+
+par(mfrow = c(1,1))
+plot(sdP,muP,type="l",xlim=c(0,15),ylim=c(0,10),lty=3)  
+
+mufree = 1.6/4 
+points(0,mufree,cex=4,pch="*",col="violet")  
+
+sharpe =(muP-mufree)/sdP 
+ind = (sharpe == max(sharpe)) 
+weights[ind,] 
+
+lines(c(0,sdP[ind]),c(mufree,muP[ind]),lwd=4,lty=1, col = "blue") 
+points(sdP[ind],muP[ind],cex=4,pch="*",col="orange") 
+
+ind2 = (sdP == min(sdP)) 
+points(sdP[ind2],muP[ind2],cex=2,pch="+",col="green") 
+
+ind3 = (muP > muP[ind2])
+lines(sdP[ind3],muP[ind3],type="l",xlim=c(0,.25),
+      ylim=c(0,.3),lwd=2, col = "red")  
+
+text(sd_vect[1],mean_vect[1],"PKN",cex=1.15)
+text(sd_vect[2],mean_vect[2],"CEZ",cex=1.15)
+text(sd_vect[3],mean_vect[3],"KER",cex=1.15)
+
+graphics.off()
+
+################################################################################
+
+# 6.4a - objasniono na zajeciach, pokazując odpowiedni plik
+
+# 6.4b - objasniono na zajeciach, zobacz też odpowiedni rysunek (slajd 4/17)
+#        z wykladu 5
+
+# 6.4c
+
+# oczekiwany zwrot dla portfela o minimalnej wariancji:
+muP[ind2] # 3.051886 %
+
+# odchylenie standardowe dla portfela o minimalnej wariancji:
+sdP[ind2] # 4.022049 %
+
+# współczynnik Sharpe'a dla portfela o minimalnej wariancji:
+sharpe[ind2] # 0.659337
+
+# wagi dla portfela o minimalnej wariancji:
+weights[ind2,] # 0.07641812 0.61155467 0.31202720
+
+
+# oczekiwany zwrot dla portfela o największym współczynniku Sharpe'a:
+muP[ind] # 3.524412 %
+
+# odchylenie standardowe dla portfela o największym współczynniku Sharpe'a:
+sdP[ind] # 4.360001 %
+
+# współczynnik Sharpe'a dla portfela o największym współczynniku Sharpe'a:
+sharpe[ind] # 0.7166081
+
+# wagi dla portfela o największym współczynniku Sharpe'a:
+weights[ind,] # 0.1959736 0.5537543 0.2502721
+
+
+# 6.4d
+#
+#     zmodyfikuj kod tak, aby znaleźć portfele optymalne 
+#     (bez krótkiej sprzedaży) bazujące na wszyskich 7 akcjach 
+#     (może się okazać, że wagi przy niektórych z nich są równa 0),
+
+
+################################################################################
+#
+#                         OptimalPortfolio dla 6.4d
+#
+
+
+library(quadprog)
+
+NK=read.csv("NotowaniaKwartalne.csv", header=TRUE)
+n=21
+attach(NK)
+
+PZUZwrot=100*(PZU[-1]/PZU[-n]-1) 
+PKNZwrot=100*(PKN[-1]/PKN[-n]-1)
+CDRZwrot=100*(CDR[-1]/CDR[-n]-1) 
+LPPZwrot=100*(LPP[-1]/LPP[-n]-1)
+CEZZwrot=100*(CEZ[-1]/CEZ[-n]-1) 
+CPSZwrot=100*(CPS[-1]/CPS[-n]-1) 
+KERZwrot=100*(KER[-1]/KER[-n]-1) 
+
+# [6.4d - zmiana 1]
+# tutaj zmieniamy R biorąc wszystkie 7 zwrotów
+R=cbind(PZUZwrot, PKNZwrot,CDRZwrot, LPPZwrot, CEZZwrot, CPSZwrot, KERZwrot)
+
+mean_vect = apply(R,2,mean)
+cov_mat = cov(R)
+sd_vect = sqrt(diag(cov_mat))
+
+# [6.4d - zmiana 2]
+# tutaj zmieniamy na rep(1,7) oraz nrow=7
+Amat = cbind(rep(1,7),mean_vect,diag(1,nrow=7))
+
+# [6.4d - zmiana 3]
+# tutaj zmieniamy na ncol=7
+muP = seq(min(mean_vect)+.01,max(mean_vect)-.01,length=300)  
+sdP = muP 
+weights = matrix(0,nrow=300,ncol=7) 
+
+# [6.4d - zmiana 4]
+# tutaj zmieniamy dwa razy na rep(0,7)
+for (i in 1:length(muP)){
+  bvec = c(1,muP[i],rep(0,7))
+  result = 
+    solve.QP(Dmat=2*cov_mat,dvec=rep(0,7),Amat=Amat,bvec=bvec,meq=2)
+  sdP[i] = sqrt(result$value)
+  weights[i,] = result$solution
+}
+
+
+par(mfrow = c(1,1))
+plot(sdP,muP,type="l",xlim=c(0,15),ylim=c(0,10),lty=3)  
+
+mufree = 1.6/4 
+points(0,mufree,cex=4,pch="*",col="violet")  
+
+sharpe =(muP-mufree)/sdP 
+ind = (sharpe == max(sharpe)) 
+weights[ind,] 
+
+lines(c(0,sdP[ind]),c(mufree,muP[ind]),lwd=4,lty=1, col = "blue") 
+points(sdP[ind],muP[ind],cex=4,pch="*",col="orange") 
+
+ind2 = (sdP == min(sdP)) 
+points(sdP[ind2],muP[ind2],cex=2,pch="+",col="green") 
+
+ind3 = (muP > muP[ind2])
+lines(sdP[ind3],muP[ind3],type="l",xlim=c(0,.25),
+      ylim=c(0,.3),lwd=2, col = "red")  
+
+text(sd_vect[1],mean_vect[1],"PKN",cex=1.15)
+text(sd_vect[2],mean_vect[2],"CEZ",cex=1.15)
+text(sd_vect[3],mean_vect[3],"KER",cex=1.15)
+
+graphics.off()
+
+
+
+# 6.4e
+#
+#     zmodyfikuj kod 6.4d tak, aby znaleźć portfele optymalne 
+#     bez ograniczenia na krótką sprzedaż.
+
+
+library(quadprog)
+
+NK=read.csv("NotowaniaKwartalne.csv", header=TRUE)
+n=21
+attach(NK)
+
+PZUZwrot=100*(PZU[-1]/PZU[-n]-1) 
+PKNZwrot=100*(PKN[-1]/PKN[-n]-1)
+CDRZwrot=100*(CDR[-1]/CDR[-n]-1) 
+LPPZwrot=100*(LPP[-1]/LPP[-n]-1)
+CEZZwrot=100*(CEZ[-1]/CEZ[-n]-1) 
+CPSZwrot=100*(CPS[-1]/CPS[-n]-1) 
+KERZwrot=100*(KER[-1]/KER[-n]-1) 
+
+R=cbind(PZUZwrot, PKNZwrot,CDRZwrot, LPPZwrot, CEZZwrot, CPSZwrot, KERZwrot)
+
+mean_vect = apply(R,2,mean)
+cov_mat = cov(R)
+sd_vect = sqrt(diag(cov_mat))
+
+# [6.4e - zmiana 1 (względem 6.4d)]
+# tutaj usuwamy diag(1,nrow=7)
+Amat = cbind(rep(1,7),mean_vect)
+
+muP = seq(min(mean_vect)+.01,max(mean_vect)-.01,length=300)  
+sdP = muP 
+weights = matrix(0,nrow=300,ncol=7) 
+
+# [6.4e - zmiana 2 (względem 6.4d)]
+# tutaj zmieniamy bvec na bvec = c(1,muP[i])
+for (i in 1:length(muP)){
+  bvec = c(1,muP[i])
+  result = 
+    solve.QP(Dmat=2*cov_mat,dvec=rep(0,7),Amat=Amat,bvec=bvec,meq=2)
+  sdP[i] = sqrt(result$value)
+  weights[i,] = result$solution
+}
+
+
+par(mfrow = c(1,1))
+plot(sdP,muP,type="l",xlim=c(0,15),ylim=c(0,10),lty=3)  
+
+mufree = 1.6/4 
+points(0,mufree,cex=4,pch="*",col="violet")  
+
+sharpe =(muP-mufree)/sdP 
+ind = (sharpe == max(sharpe)) 
+weights[ind,] 
+
+lines(c(0,sdP[ind]),c(mufree,muP[ind]),lwd=4,lty=1, col = "blue") 
+points(sdP[ind],muP[ind],cex=4,pch="*",col="orange") 
+
+ind2 = (sdP == min(sdP)) 
+points(sdP[ind2],muP[ind2],cex=2,pch="+",col="green") 
+
+ind3 = (muP > muP[ind2])
+lines(sdP[ind3],muP[ind3],type="l",xlim=c(0,.25),
+      ylim=c(0,.3),lwd=2, col = "red")  
+
+text(sd_vect[1],mean_vect[1],"PKN",cex=1.15)
+text(sd_vect[2],mean_vect[2],"CEZ",cex=1.15)
+text(sd_vect[3],mean_vect[3],"KER",cex=1.15)
+
+graphics.off()
+```
+
+
+## Lista 1
+
+```{r}
+################################################################################
+#
+#                     ZADANIE   1.3
+#
+################################################################################
+# (1.3a) 
+#     Pobierz dane dotyczące notowań PZU ze strony stooq.pl 
+#     i zapisz je do ramki danych pzu.df.
+################################################################################
+
+# Pobieranie danych [pzu.df] ze strony stooq.pl za pomocą read.csv 
+pzu.df <- read.csv("https://stooq.pl/q/d/l/?s=pzu&i=d")
+
+################################################################################
+# (1.3b) 
+#     Dołącz pakiet xts a nastepnie zamień pzu.df na pzu.xts
+#     - obiekt klasy xts - za pomocą xts oraz as.Date.
+################################################################################
+
+# dołączanie pakietu xts
+library(xts)
+
+# Konwersja na xts za pomocą xts oraz as.Date
+pzu.xts <- xts(x=pzu.df[,-1], order.by = as.Date(pzu.df[,1]))
+
+################################################################################
+# (1.3c) 
+#     Z pzu.xts wybierz dane z roku 2012 jako pzu.xts.2012
+#     i utwórz dla nich wykresy wszystkich zmiennych.
+################################################################################
+
+# wybór danych z roku 2012 za pomoca "::"
+pzu.xts.2012 <- pzu.xts["2012-01-01::2012-12-31"]
+
+# wykres np. dla zmiennej "Wolumen"
+plot(pzu.xts.2012$Wolumen)
+
+# wykresy dla wszystkich zmiennych poza wolumenem (plot z multi.panel=TRUE)
+plot(pzu.xts.2012$Otwarcie)
+
+plot(pzu.xts.2012[,-5], multi.panel = TRUE)
+
+
+################################################################################
+# (1.3d) 
+#   Wyznacz podstawowe charakterystyki rozkłądu dla wszystkich zmiennych
+#   za pomocą summary() oraz współczynniki korelacji pomiędzy zmiennymi 
+#   dla pzu.xts.2012.
+################################################################################
+
+# wyznaczmy charakterystyki za pomocą summary()
+summary(pzu.xts.2012)
+
+# wyznaczamy współczynniki korelacji za pomocą cor
+cor(pzu.xts.2012)
+
+################################################################################
+#
+#                     ZADANIE   1.4
+#
+################################################################################
+# (1.4a) 
+#     Dołącz pakiet quantmod i pobierz dane AAPL z yahoo za pomocą getSymbols.
+################################################################################
+
+# dołaczanie pakietu quantmod
+library(quantmod)
+
+# pobieranie danych AAPL z yahoo za pomoca getSymbols
+AAPL <- getSymbols(Symbol="AAPL", src="yahoo", auto.assign = FALSE)
+
+################################################################################
+# (1.4b) 
+#     Z pobranych danych AAPL wybierz te z roku 2018 i wyznacz stopy zwrotu "Rt"
+#
+#           R_t = (P_t-P_{t-1}) / P_{t-1}
+#
+#     oraz logarytmiczne stopy zwrotu "log.Rt"
+#
+#           \tilde{R}_t = log(1+R_t),
+#
+# gdzie P_t jest ceną zamknięcia w chwili t.
+################################################################################
+
+# wybieramy dane z roku 2018
+AAPL.2018 <- AAPL["2018-01-01::2018-12-31"]
+
+# wyznaczamy Rt za pomocą diff oraz lag
+Rt <- diff(AAPL.2018$AAPL.Close) / lag(AAPL.2018$AAPL.Close)
+
+# wyznaczamy log.Rt ze wzoru
+log.Rt <- log(1 + Rt)
+
+################################################################################
+# (1.4c) 
+#     Utwórz wykresy zwrotów oraz logarytmicznych zwrotów a także ich 
+#     histogramy i wykresy pudełkowe.
+################################################################################
+
+# wykresy stóp zwrotu Rt
+plot(Rt)
+
+# wykresy logarytmicznych stóp zwrotu log.Rt
+plot(log.Rt)
+
+# histogramy
+hist(Rt)
+hist(log.Rt)
+
+# wykresy pudełkowe
+boxplot(Rt)
+boxplot(log.Rt)
+
+```
 
