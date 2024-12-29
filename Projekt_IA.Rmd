@@ -18,6 +18,8 @@ header-includes:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(e1071) #do skosnosci i kurtozy
+library(knitr)
 library(quantmod)
 ```
 
@@ -47,28 +49,111 @@ Portfel inwestycyjny będzie składał się z następujących aktywów:
    - **CCC S.A.** – lider rynku obuwniczego w Polsce, znany z dynamicznego rozwoju w regionie Europy Środkowo-Wschodniej. Wybrano ją jako reprezentanta rynku akcji notowanego w indeksie WIG30.
 
 2. **Inwestycje alternatywne:**
-   - **Bitcoin (BTC-USD)**: Kryptowaluta, która zyskała na popularności jako alternatywna inwestycja, uważana przez wielu za "cyfrowe złoto". Jest to inwestycja charakteryzująca się wysoką zmiennością, ale także dużym potencjałem wzrostu.
+   - **Sok pomarańczowy (Orange Juice, OJ=F):** Towar rolny, który jest traktowany jako alternatywna inwestycja. Sok pomarańczowy charakteryzuje się zmiennością cen, wynikającą z czynników takich jak zmiany klimatyczne, zmniejszenie plonów czy zmiany popytu. Jest to przykład inwestycji, która może być używana do dywersyfikacji portfela, mimo swojej niestabilności.
    - **Nieruchomości historyczne:** Reprezentowane przez Vanguard Real Estate ETF (`VNQ`), który odzwierciedla inwestycje w nieruchomości, w tym historyczne, na rynku amerykańskim.
    - **LVMH Moet Hennessy Louis Vuitton SE (`MC.PA`):** Światowy lider rynku dóbr luksusowych, reprezentujący kategorię inwestycji związanych z markami premium.
    
 
-```{r, echo=FALSE, eval=TRUE, results='asis'}
+```{r, echo=FALSE, eval=TRUE, results='asis', comment=FALSE, message=FALSE}
 # Pobranie danych dla CCC S.A. z Yahoo Finance
-getSymbols("CCC.WA", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+getSymbols("CCC.WA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
 # Zmiana nazw kolumn w obiekcie xts
 colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
 
-
-# Pobranie danych dla bitcoin
-getSymbols("BTC-USD", src = "yahoo", from = "2020-01-01", to = Sys.Date())
-
 # Pobranie danych dla ETF na nieruchomości
-getSymbols("VNQ", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+getSymbols("VNQ", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
 colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
 
+# sok pomarańczowy
+getSymbols("OJ=F", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+OJ_data <- get("OJ=F")
+colnames(OJ_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+
+
 # Pobranie danych dla LVMH
-getSymbols("MC.PA", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+getSymbols("MC.PA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
 colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+
 ```
+
+
+```{r, echo=FALSE}
+# stopy zwrotu - logarytmiczne
+
+# wyznaczamy Rt za pomocą diff oraz lag
+Rt_MCPA <- diff(MC.PA$Close) / lag(MC.PA$Close)
+# wyznaczamy log.Rt ze wzoru
+log.Rt_MCPA <- na.omit(log(1 + Rt_MCPA))
+
+```
+
+
+```{r, echo=FALSE, results='asis', eval=TRUE}
+# to jest z zadania z pwr zadanie 1.4-b
+calculate_log_returns <- function(data) {
+  Rt <- diff(data$Close) / lag(data$Close) 
+  log_Rt <- na.omit(log(1 + Rt)) 
+  return(log_Rt)
+}
+
+log_returns_CCC <- calculate_log_returns(CCC.WA)
+log_returns_VNQ <- calculate_log_returns(VNQ)
+log_returns_OJ <- calculate_log_returns(OJ_data)
+log_returns_LVMH <- calculate_log_returns(MC.PA)
+
+
+returns_data <- na.omit(cbind(
+  CCC = log_returns_CCC,
+  VNQ = log_returns_VNQ,
+  OrangeJuice = log_returns_OJ,
+  LVMH = log_returns_LVMH
+))
+```
+
+
+```{r, echo = FALSE,fig.height=8, fig.width=14}
+par(mfrow=c(2,2))
+# Wykres dla CCC.WA
+plot(log_returns_CCC, type = "l", col = "plum", lwd = 2, 
+     main = "Logarytmiczne stopy zwrotu: CCC.WA", 
+     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
+
+# Wykres dla VNQ
+plot(log_returns_VNQ, type = "l", col = "peachpuff", lwd = 2, 
+     main = "Logarytmiczne stopy zwrotu: VNQ", 
+     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
+
+# Wykres dla OJ (sok pomarańczowy)
+plot(log_returns_OJ, type = "l", col = "skyblue", lwd = 2, 
+     main = "Logarytmiczne stopy zwrotu: Orange Juice", 
+     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
+
+# Wykres dla LVMH
+plot(log_returns_LVMH, type = "l", col = "olivedrab2", lwd = 2, 
+     main = "Logarytmiczne stopy zwrotu: LVMH", 
+     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
+
+```
+
+
+
+```{r, echo=FALSE, results='asis', eval=TRUE}
+descriptive_stats <- data.frame(
+  "Średnia" = colMeans(returns_data),
+  "Mediana" = apply(returns_data, 2, median),
+  "Odch.Std" = apply(returns_data, 2, sd),
+  "Min" = apply(returns_data, 2, min),
+  "Max" = apply(returns_data, 2, max),
+  "Q1" = apply(returns_data, 2, quantile, probs = 0.25),
+  "Q3" = apply(returns_data, 2, quantile, probs = 0.75),
+  "Skośność" = apply(returns_data, 2, skewness),
+  "Kurtoza" = apply(returns_data, 2, kurtosis)
+)
+
+rownames(descriptive_stats) <- c("CCC", "VNQ", "OrangeJuice", "LVMH")
+transposed_stats <- t(descriptive_stats)
+knitr::kable(transposed_stats, caption = "Statystyki opisowe")
+```
+
 
 
