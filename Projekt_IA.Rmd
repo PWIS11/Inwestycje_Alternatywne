@@ -52,15 +52,13 @@ Portfel inwestycyjny będzie składał się z następujących aktywów:
    - **Sok pomarańczowy (Orange Juice, OJ=F):** Towar rolny, który jest traktowany jako alternatywna inwestycja. Sok pomarańczowy charakteryzuje się zmiennością cen, wynikającą z czynników takich jak zmiany klimatyczne, zmniejszenie plonów czy zmiany popytu. Jest to przykład inwestycji, która może być używana do dywersyfikacji portfela, mimo swojej niestabilności.
    - **Nieruchomości historyczne:** Reprezentowane przez Vanguard Real Estate ETF (`VNQ`), który odzwierciedla inwestycje w nieruchomości, w tym historyczne, na rynku amerykańskim.
    - **LVMH Moet Hennessy Louis Vuitton SE (`MC.PA`):** Światowy lider rynku dóbr luksusowych, reprezentujący kategorię inwestycji związanych z markami premium.
-   
-
-```{r, echo=FALSE, eval=TRUE, results='asis', comment=FALSE, message=FALSE}
-# Pobranie danych dla CCC S.A. z Yahoo Finance
+  
+  
+  
+```{r}
 getSymbols("CCC.WA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# Zmiana nazw kolumn w obiekcie xts
 colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
 
-# Pobranie danych dla ETF na nieruchomości
 getSymbols("VNQ", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
 colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
 
@@ -69,33 +67,75 @@ getSymbols("OJ=F", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
 OJ_data <- get("OJ=F")
 colnames(OJ_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
 
-
-# Pobranie danych dla LVMH
 getSymbols("MC.PA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
 colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
 
+ccc_close <- CCC.WA$Close
+vnq_close <- VNQ$Close
+oj_close <- OJ_data$Close
+mc_close <- MC.PA$Close
+
+colnames(ccc_close) <- "CCC"
+colnames(vnq_close) <- "VNQ"
+colnames(oj_close) <- "OJ"
+colnames(mc_close) <- "LVMH"
+
+all_data <- merge(ccc_close, vnq_close, oj_close, mc_close, all = FALSE)
+
+# tutaj są ceny zamkniec inwestycji
+inwestycje <- data.frame(Date = index(all_data), coredata(all_data))
+
+```
+ 
+
+```{r, echo=FALSE, eval=TRUE, results='asis', comment=FALSE, message=FALSE, warning=FALSE}
+# # Pobranie danych dla CCC S.A. z Yahoo Finance
+# getSymbols("CCC.WA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# # Zmiana nazw kolumn w obiekcie xts
+# colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# 
+# # Pobranie danych dla ETF na nieruchomości
+# getSymbols("VNQ", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# 
+# # sok pomarańczowy
+# getSymbols("OJ=F", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# OJ_data <- get("OJ=F")
+# colnames(OJ_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# 
+# 
+# # Pobranie danych dla LVMH
+# getSymbols("MC.PA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# 
+# all_data <- merge(CCC.WA$CCC.WA.Close, VNQ$VNQ.Close, OJ_data$Close, MC.PA$Close, all = FALSE)
+# inwestycje <- data.frame(Date = index(all_data), coredata(all_data))
+# 
+# # Wyświetlenie wyników
+# head(inwestycje)
+
 ```
 
 
-```{r, echo=FALSE}
-# stopy zwrotu - logarytmiczne
 
-# wyznaczamy Rt za pomocą diff oraz lag
-Rt_MCPA <- diff(MC.PA$Close) / lag(MC.PA$Close)
-# wyznaczamy log.Rt ze wzoru
-log.Rt_MCPA <- na.omit(log(1 + Rt_MCPA))
+```{r, echo=FALSE, comment=FALSE, message=FALSE, warning=FALSE}
+# # stopy zwrotu - logarytmiczne
+# 
+# # wyznaczamy Rt za pomocą diff oraz lag
+# Rt_MCPA <- diff(MC.PA$Close) / lag(MC.PA$Close)
+# # wyznaczamy log.Rt ze wzoru
+# log.Rt_MCPA <- na.omit(log(1 + Rt_MCPA))
 
 ```
 
 
-```{r, echo=FALSE, results='asis', eval=TRUE}
+```{r, echo=FALSE, results='asis', eval=TRUE, comment=FALSE, message=FALSE, warning=FALSE}
 # to jest z zadania z pwr zadanie 1.4-b
 calculate_log_returns <- function(data) {
   Rt <- diff(data$Close) / lag(data$Close) 
   log_Rt <- na.omit(log(1 + Rt)) 
   return(log_Rt)
 }
-
 log_returns_CCC <- calculate_log_returns(CCC.WA)
 log_returns_VNQ <- calculate_log_returns(VNQ)
 log_returns_OJ <- calculate_log_returns(OJ_data)
@@ -111,7 +151,7 @@ returns_data <- na.omit(cbind(
 ```
 
 
-```{r, echo = FALSE,fig.height=8, fig.width=14}
+```{r, echo = FALSE,fig.height=8, fig.width=14, comment=FALSE, message=FALSE, warning=FALSE}
 par(mfrow=c(2,2))
 # Wykres dla CCC.WA
 plot(log_returns_CCC, type = "l", col = "plum", lwd = 2, 
@@ -137,7 +177,7 @@ plot(log_returns_LVMH, type = "l", col = "olivedrab2", lwd = 2,
 
 
 
-```{r, echo=FALSE, results='asis', eval=TRUE}
+```{r, echo=FALSE, results='asis', eval=TRUE, comment=FALSE, message=FALSE, warning=FALSE}
 descriptive_stats <- data.frame(
   "Średnia" = colMeans(returns_data),
   "Mediana" = apply(returns_data, 2, median),
@@ -153,7 +193,27 @@ descriptive_stats <- data.frame(
 rownames(descriptive_stats) <- c("CCC", "VNQ", "OrangeJuice", "LVMH")
 transposed_stats <- t(descriptive_stats)
 knitr::kable(transposed_stats, caption = "Statystyki opisowe")
+
+# Ryzyko portfela jest mierzone jako odchylenie standardowe stóp zwrotu portfela
 ```
+
+
+```{r}
+inwestycje_bez_dat <- inwestycje[, -1]
+mean_returns <- colMeans(returns_data) # srednie stopy zwrotu
+
+
+```
+# 3. wartosc wspolczynnikow korelacji
+
+```{r}
+# Macierz korelacji
+cor_matrix <- cor(returns_data)
+print(cor_matrix)
+
+```
+
+
 
 
 
