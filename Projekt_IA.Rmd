@@ -23,6 +23,38 @@ library(knitr)
 library(quantmod)
 ```
 
+
+```{r}
+# pobranie danych do xlsx
+
+# library(quantmod)
+# library(writexl)
+
+# getSymbols("CCC.WA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# CCC.WA_df <- data.frame(Date = index(CCC.WA), coredata(CCC.WA))
+# write_xlsx(CCC.WA_df, "CCC.WA_data.xlsx")
+# 
+# getSymbols("VNQ", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# VNQ_df <- data.frame(Date = index(VNQ), coredata(VNQ))
+# write_xlsx(VNQ_df, "VNQ_data.xlsx")
+# 
+# getSymbols("OJ=F", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# OJ_data <- get("OJ=F")
+# colnames(OJ_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# OJ_data_df <- data.frame(Date = index(OJ_data), coredata(OJ_data))
+# write_xlsx(OJ_data_df, "OJ_F_data.xlsx")
+# 
+# getSymbols("MC.PA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
+# colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
+# MC.PA_df <- data.frame(Date = index(MC.PA), coredata(MC.PA))
+# write_xlsx(MC.PA_df, "MC.PA_data.xlsx")
+
+```
+
+
+
 # **1. Wstęp**
 Celem niniejszego projektu jest skonstruowanie i analiza portfela inwestycyjnego, obejmującego jedną spółkę notowaną na polskim rynku (wchodzącą w skład indeksu WIG30) oraz trzy inwestycje alternatywne, reprezentujące różne kategorie. Wybrane aktywa pozwolą zbudować zróżnicowany portfel, uwzględniający zarówno tradycyjne akcje, jak i mniej standardowe instrumenty finansowe, charakteryzujące się odmiennymi profilami ryzyka i potencjalnymi stopami zwrotu.
 
