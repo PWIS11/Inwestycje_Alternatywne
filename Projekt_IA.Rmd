@@ -17,231 +17,90 @@ header-includes:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if (!require("kableExtra")) install.packages("kableExtra")
+if (!require("readxl")) install.packages("readxl")
 
 library(e1071) #do skosnosci i kurtozy
 library(knitr)
 library(quantmod)
+library(readxl)
+library(kableExtra)
+```
+
+```{r}
+# zalaczenie danych z pliku inwestycje_all.xlsx
+
+library(readxl)
+
+# Import pliku bez pełnej ścieżki
+plik <- "inwestycje_all.xlsx"
+
+ccc_all <- read_excel(plik, sheet = 1)
+ccc_close <- read_excel(plik, sheet = 2)
+
+vnq_all <- read_excel(plik, sheet = 4)
+vnq_close <- read_excel(plik, sheet = 5)
+
+mcpa_all <- read_excel(plik, sheet = 7)
+mcpa_close <- read_excel(plik, sheet = 8)
+
+soczek_all <- read_excel(plik, sheet = 10)
+soczek_close <- read_excel(plik, sheet = 11)
 ```
 
 
 ```{r}
-# pobranie danych do xlsx
-
-# library(quantmod)
-# library(writexl)
-
-# getSymbols("CCC.WA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# CCC.WA_df <- data.frame(Date = index(CCC.WA), coredata(CCC.WA))
-# write_xlsx(CCC.WA_df, "CCC.WA_data.xlsx")
-# 
-# getSymbols("VNQ", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# VNQ_df <- data.frame(Date = index(VNQ), coredata(VNQ))
-# write_xlsx(VNQ_df, "VNQ_data.xlsx")
-# 
-# getSymbols("OJ=F", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# OJ_data <- get("OJ=F")
-# colnames(OJ_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# OJ_data_df <- data.frame(Date = index(OJ_data), coredata(OJ_data))
-# write_xlsx(OJ_data_df, "OJ_F_data.xlsx")
-# 
-# getSymbols("MC.PA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# MC.PA_df <- data.frame(Date = index(MC.PA), coredata(MC.PA))
-# write_xlsx(MC.PA_df, "MC.PA_data.xlsx")
-
-```
-
-
-
-# **1. Wstęp**
-Celem niniejszego projektu jest skonstruowanie i analiza portfela inwestycyjnego, obejmującego jedną spółkę notowaną na polskim rynku (wchodzącą w skład indeksu WIG30) oraz trzy inwestycje alternatywne, reprezentujące różne kategorie. Wybrane aktywa pozwolą zbudować zróżnicowany portfel, uwzględniający zarówno tradycyjne akcje, jak i mniej standardowe instrumenty finansowe, charakteryzujące się odmiennymi profilami ryzyka i potencjalnymi stopami zwrotu.
-
-W ramach projektu przeprowadzone zostaną następujące analizy:
-\begin{itemize}
-\item Obliczenie podstawowych statystyk opisowych dla wybranych inwestycji.
-\item Wyznaczenie stóp zwrotu, ryzyka oraz efektywności portfela w dwóch scenariuszach:
-  \begin{itemize}
-   \item minimalnego ryzyka,
-   \item maksymalnej efektywności.
-  \end{itemize}
-   
-\item Obliczenie współczynników korelacji pomiędzy analizowanymi inwestycjami.
-\item Ocena efektywności portfela za pomocą różnych wskaźników finansowych.
-\item Przedstawienie zbioru możliwości inwestycyjnych, w tym portfela o minimalnym ryzyku, maksymalnej efektywności oraz portfeli jednoelementowych.
-
-\end{itemize}
-
-
-# **2. Wybrane inwestycje**
-Portfel inwestycyjny będzie składał się z następujących aktywów:
-
-1. **Spółka z WIG30:**  
-   - **CCC S.A.** – lider rynku obuwniczego w Polsce, znany z dynamicznego rozwoju w regionie Europy Środkowo-Wschodniej. Wybrano ją jako reprezentanta rynku akcji notowanego w indeksie WIG30.
-
-2. **Inwestycje alternatywne:**
-   - **Sok pomarańczowy (Orange Juice, OJ=F):** Towar rolny, który jest traktowany jako alternatywna inwestycja. Sok pomarańczowy charakteryzuje się zmiennością cen, wynikającą z czynników takich jak zmiany klimatyczne, zmniejszenie plonów czy zmiany popytu. Jest to przykład inwestycji, która może być używana do dywersyfikacji portfela, mimo swojej niestabilności.
-   - **Nieruchomości historyczne:** Reprezentowane przez Vanguard Real Estate ETF (`VNQ`), który odzwierciedla inwestycje w nieruchomości, w tym historyczne, na rynku amerykańskim.
-   - **LVMH Moet Hennessy Louis Vuitton SE (`MC.PA`):** Światowy lider rynku dóbr luksusowych, reprezentujący kategorię inwestycji związanych z markami premium.
-  
-  
-  
-```{r}
-getSymbols("CCC.WA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-
-getSymbols("VNQ", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-
-# sok pomarańczowy
-getSymbols("OJ=F", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-OJ_data <- get("OJ=F")
-colnames(OJ_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-
-getSymbols("MC.PA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-
-ccc_close <- CCC.WA$Close
-vnq_close <- VNQ$Close
-oj_close <- OJ_data$Close
-mc_close <- MC.PA$Close
-
-colnames(ccc_close) <- "CCC"
-colnames(vnq_close) <- "VNQ"
-colnames(oj_close) <- "OJ"
-colnames(mc_close) <- "LVMH"
-
-all_data <- merge(ccc_close, vnq_close, oj_close, mc_close, all = FALSE)
-
-# tutaj są ceny zamkniec inwestycji
-inwestycje <- data.frame(Date = index(all_data), coredata(all_data))
-
-```
- 
-
-```{r, echo=FALSE, eval=TRUE, results='asis', comment=FALSE, message=FALSE, warning=FALSE}
-# # Pobranie danych dla CCC S.A. z Yahoo Finance
-# getSymbols("CCC.WA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# # Zmiana nazw kolumn w obiekcie xts
-# colnames(CCC.WA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# 
-# # Pobranie danych dla ETF na nieruchomości
-# getSymbols("VNQ", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# colnames(VNQ) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# 
-# # sok pomarańczowy
-# getSymbols("OJ=F", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# OJ_data <- get("OJ=F")
-# colnames(OJ_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# 
-# 
-# # Pobranie danych dla LVMH
-# getSymbols("MC.PA", src = "yahoo", from = "2024-01-01", to = "2024-12-31")
-# colnames(MC.PA) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted")
-# 
-# all_data <- merge(CCC.WA$CCC.WA.Close, VNQ$VNQ.Close, OJ_data$Close, MC.PA$Close, all = FALSE)
-# inwestycje <- data.frame(Date = index(all_data), coredata(all_data))
-# 
-# # Wyświetlenie wyników
-# head(inwestycje)
-
-```
-
-
-
-```{r, echo=FALSE, comment=FALSE, message=FALSE, warning=FALSE}
-# # stopy zwrotu - logarytmiczne
-# 
-# # wyznaczamy Rt za pomocą diff oraz lag
-# Rt_MCPA <- diff(MC.PA$Close) / lag(MC.PA$Close)
-# # wyznaczamy log.Rt ze wzoru
-# log.Rt_MCPA <- na.omit(log(1 + Rt_MCPA))
-
-```
-
-
-```{r, echo=FALSE, results='asis', eval=TRUE, comment=FALSE, message=FALSE, warning=FALSE}
-# to jest z zadania z pwr zadanie 1.4-b
-calculate_log_returns <- function(data) {
-  Rt <- diff(data$Close) / lag(data$Close) 
-  log_Rt <- na.omit(log(1 + Rt)) 
-  return(log_Rt)
-}
-log_returns_CCC <- calculate_log_returns(CCC.WA)
-log_returns_VNQ <- calculate_log_returns(VNQ)
-log_returns_OJ <- calculate_log_returns(OJ_data)
-log_returns_LVMH <- calculate_log_returns(MC.PA)
-
+# rameczka danych ze stópkami logarytmicznymiiiiuiuiiu
 
 returns_data <- na.omit(cbind(
-  CCC = log_returns_CCC,
-  VNQ = log_returns_VNQ,
-  OrangeJuice = log_returns_OJ,
-  LVMH = log_returns_LVMH
+  CCC = ccc_close$`St. Log`,
+  VNQ = vnq_close$St.log,
+  OrangeJuice = soczek_close$St.log,
+  LVMH = mcpa_close$St.log
 ))
 ```
 
 
-```{r, echo = FALSE,fig.height=8, fig.width=14, comment=FALSE, message=FALSE, warning=FALSE}
-par(mfrow=c(2,2))
-# Wykres dla CCC.WA
-plot(log_returns_CCC, type = "l", col = "plum", lwd = 2, 
-     main = "Logarytmiczne stopy zwrotu: CCC.WA", 
-     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
 
-# Wykres dla VNQ
-plot(log_returns_VNQ, type = "l", col = "peachpuff", lwd = 2, 
-     main = "Logarytmiczne stopy zwrotu: VNQ", 
-     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
-
-# Wykres dla OJ (sok pomarańczowy)
-plot(log_returns_OJ, type = "l", col = "skyblue", lwd = 2, 
-     main = "Logarytmiczne stopy zwrotu: Orange Juice", 
-     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
-
-# Wykres dla LVMH
-plot(log_returns_LVMH, type = "l", col = "olivedrab2", lwd = 2, 
-     main = "Logarytmiczne stopy zwrotu: LVMH", 
-     xlab = "Czas", ylab = "Logarytmiczna stopa zwrotu")
-
-```
-
-
-
-```{r, echo=FALSE, results='asis', eval=TRUE, comment=FALSE, message=FALSE, warning=FALSE}
-descriptive_stats <- data.frame(
-  "Średnia" = colMeans(returns_data),
-  "Mediana" = apply(returns_data, 2, median),
-  "Odch.Std" = apply(returns_data, 2, sd),
-  "Min" = apply(returns_data, 2, min),
-  "Max" = apply(returns_data, 2, max),
-  "Q1" = apply(returns_data, 2, quantile, probs = 0.25),
-  "Q3" = apply(returns_data, 2, quantile, probs = 0.75),
-  "Skośność" = apply(returns_data, 2, skewness),
-  "Kurtoza" = apply(returns_data, 2, kurtosis)
-)
-
-rownames(descriptive_stats) <- c("CCC", "VNQ", "OrangeJuice", "LVMH")
-transposed_stats <- t(descriptive_stats)
-knitr::kable(transposed_stats, caption = "Statystyki opisowe")
-
-# Ryzyko portfela jest mierzone jako odchylenie standardowe stóp zwrotu portfela
-```
-
-
-```{r}
-inwestycje_bez_dat <- inwestycje[, -1]
-mean_returns <- colMeans(returns_data) # srednie stopy zwrotu
-
-
-```
 # 3. wartosc wspolczynnikow korelacji
 
 ```{r}
 # Macierz korelacji
 cor_matrix <- cor(returns_data)
-print(cor_matrix)
+
+
+# Dane macierzy korelacji
+cor_matrix <- data.frame(
+  CCC = c(1.00000000, 0.02625213, -0.08289124, 0.01699572),
+  VNQ = c(0.02625213, 1.00000000, -0.09297469, 0.02495983),
+  OrangeJuice = c(-0.08289124, -0.09297469, 1.00000000, 0.03478741),
+  LVMH = c(0.01699572, 0.02495983, 0.03478741, 1.00000000)
+)
+rownames(cor_matrix) <- c("CCC", "VNQ", "OrangeJuice", "LVMH")
+
+
+colnames(cor_matrix) <- c(
+  cell_spec("CCC", bold = TRUE, color = "forestgreen"),
+  cell_spec("VNQ", bold = TRUE, color = "navy"),
+  cell_spec("OrangeJuice", bold = TRUE, color = "orange"),
+  cell_spec("LVMH", bold = TRUE, color = "red")
+)
+rownames(cor_matrix) <- c(
+  cell_spec("CCC", bold = TRUE, color = "forestgreen"),
+  cell_spec("VNQ", bold = TRUE, color = "navy"),
+  cell_spec("OrangeJuice", bold = TRUE, color = "orange"),
+  cell_spec("LVMH", bold = TRUE, color = "red")
+)
+
+kbl(
+  cor_matrix,
+  escape = FALSE, 
+  caption = "Macierz korelacji stóp zwrotu dla wybranych inwestycji",
+  align = "c"
+) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+# to kolorowanie chat mi wypluł --- sama tak nie umiem zrobić :DDDDD
 
 ```
 
