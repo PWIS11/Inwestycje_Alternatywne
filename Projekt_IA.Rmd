@@ -30,9 +30,6 @@ library(kableExtra)
 ```{r}
 # zalaczenie danych z pliku inwestycje_all.xlsx
 
-library(readxl)
-
-# Import pliku bez pełnej ścieżki
 plik <- "inwestycje_all.xlsx"
 
 ccc_all <- read_excel(plik, sheet = 1)
@@ -106,5 +103,143 @@ kbl(
 
 
 
+# budowanie portfeli
 
+```{r}
+stopy_sok <- returns_data[,3]
+stopyCCC <- returns_data[,1]
+stopyVNQ <- returns_data[,2]
+stopyLVMH <- returns_data[,4]
+
+
+
+#importing weights from file
+weights4inv <- read.table("weights4inv.txt",dec=",", header=TRUE, quote="\"",stringsAsFactors=FALSE)
+w1 <- weights4inv$W1
+w1 <- as.numeric(w1)
+w2 <- weights4inv$W2
+w2 <- as.numeric(w2)
+w3 <- weights4inv$W3
+w3 <- as.numeric(w3)
+w4 <- weights4inv$W4
+w4 <- as.numeric(w4)
+
+#calculating SD
+s1 <- sd(stopyCCC)
+s2 <- sd(stopyVNQ)
+s3 <- sd(stopy_sok)
+s4 <- sd(stopyLVMH)
+#Calculating corellation
+corr12 <- cor(stopyCCC,stopyVNQ)
+corr13 <- cor(stopyCCC,stopy_sok)
+corr14 <- cor(stopyCCC, stopyLVMH)
+corr23 <- cor(stopyVNQ, stopy_sok)
+corr24 <- cor(stopyVNQ, stopyLVMH)
+corr34 <- cor(stopy_sok, stopyLVMH)
+
+
+
+#calculating ip
+iportfolio <- mean(stopyCCC)*w1+mean(stopyVNQ)*w2+mean(stopy_sok)*w3+mean(stopyLVMH)*w4
+#portfolio risk
+sdp <- (w1^2*s1^2 + w2^2*s2^2 + w3^2*s3^2 + w4^2*s4^2 + 2*w1*w2*s1*s2*corr12 + 2*w1*w3*s1*s3*corr13 + 2*w1*w4*s1*s4*corr14 + 
+          2*w2*w3*s2*s3*corr23 + 2*w2*w4*s2*s4*corr24 + 2*w3*w4*s3*s4*corr34)^0.5
+#calculating effectivness
+rf <- 0.0
+sharp <- (iportfolio-rf)/sdp
+#preparing df with results
+data <- cbind(w1, w2, w3, w4, iportfolio, sdp, sharp)
+data <- as.data.frame(data)
+#finding interesting portfolios
+min.risk <- subset(data, data$sdp==min(data$sdp))
+max.effectivness <- subset(data, data$sharp==max(data$sharp))
+max.ip <- subset(data, data$iportfolio==max(data$iportfolio))
+max.w1 <- subset(data, data$w1==1)
+max.w2 <- subset(data, data$w2==1)
+max.w3 <- subset(data, data$w3==1)
+max.w4 <- subset(data, data$w4==1)
+des <- c("Minimal risk portfolio", "Maximum efficiency portfolio", "Maximum rate of return portfolio", "Max weight one portfolio", "Max weight two portfolio", "Max weight three portfolio", "Max weight four portfolio")
+#Creating table with results 3 portfolios and showing results in console
+results <- cbind(rbind(min.risk, max.effectivness, max.ip, max.w1, max.w2, max.w3, max.w4), des)
+results
+write.csv(x=results, file = "results.csv", row.names=FALSE)
+#creating and saving OS
+plot(sdp, iportfolio, type= "p", col = "peachpuff")
+
+title(main="Opportunity set for four risky assets without SS")
+points(min.risk$sdp, min.risk$iportfolio, pch=19, col="forestgreen")
+points(max.effectivness$sdp, max.effectivness$iportfolio, pch=19, col="red")
+points(max.ip$sdp, max.ip$iportfolio, pch=19, col="goldenrod1")
+points(max.w1$sdp, max.w1$iportfolio, pch=19, col="black")
+points(max.w2$sdp, max.w2$iportfolio, pch=19, col="black")
+points(max.w3$sdp, max.w3$iportfolio, pch=19, col="black")
+points(max.w4$sdp, max.w4$iportfolio, pch=19, col="black")
+legend(legend = c("Opportunity set without SS", "Minimum risk portfolio", "Maximum efficiency portfolio", "Maximum RoR portfolio", 
+                  "One-element portfolio"), 
+       pch = c(19, 19, 19, 19, 19), 
+       col = c("peachpuff", "forestgreen", "red", "goldenrod1", "black"), 
+       "right")
+dev.copy(png, filename="plot.png")
+dev.off ()
+```
+
+
+```{r}
+minimalnyportfel <- results[results$des == "Minimal risk portfolio",]
+makefportfel <- results[results$des == "Maximum efficiency portfolio",]
+```
+
+
+```{r}
+# wykresy pie
+min_wektor <- c(minimalnyportfel$w1,minimalnyportfel$w2,minimalnyportfel$w3,minimalnyportfel$w4)
+max_wektor <- c(makefportfel$w1,makefportfel$w2,makefportfel$w3,makefportfel$w4)
+
+pie(min_wektor, labels = c("CCC: 6%", "VNQ: 61%", "OJ=F: 16%", "LVMH: 17%"), col = c("navy", "peachpuff", "orange", "purple4"))
+pie(max_wektor, labels = c("CCC: 55%", "OJ=F: 45%"), col = c("navy", "peachpuff", "orange", "purple4"))
+```
+
+
+```{r}
+# Dane dla portfeli jednoelementowych
+asset_names <- c("CCC", "VNQ", "OrangeJuice", "LVMH")
+portfolio_risk <- c(s1, s2, s3, s4)            # Ryzyko (SD)
+portfolio_return <- c(mean(stopyCCC), mean(stopyVNQ), mean(stopy_sok), mean(stopyLVMH))  # Stopa zwrotu (Mean)
+portfolio_efficiency <- portfolio_return / portfolio_risk  # Efektywność (Sharpe, RF = 0)
+
+# Skala procentowa
+portfolio_risk <- portfolio_risk * 100
+portfolio_return <- portfolio_return * 100
+portfolio_efficiency <- portfolio_efficiency * 100
+
+
+portfolio_data <- rbind(portfolio_risk, portfolio_return, portfolio_efficiency)
+
+# Kolory dla słupków
+bar_colors <- c("orange", "navy", "peachpuff")
+
+# Tworzenie wykresu słupkowego
+bp <- barplot(
+  portfolio_data, beside = TRUE, col = bar_colors, ylim = c(min(portfolio_efficiency) - 5, max(portfolio_risk) + 5),
+  names.arg = asset_names, las = 1,
+  ylab = "Procent (%)", main = "Portfele jednoelementowe"
+)
+
+# Dodanie etykiet na słupki
+# bp zawiera pozycje środkowe słupków
+text(
+  x = as.vector(bp),  # Pozycje środkowe słupków
+  y = as.vector(portfolio_data),  # Wartości danych
+  labels = paste0(round(as.vector(portfolio_data), 2), "%"),  # Etykiety (zaokrąglone wartości)
+  pos = ifelse(as.vector(portfolio_data) >= 0, 3, 1),  # Umiejscowienie nad/poniżej słupka
+  cex = 0.8, col = "black"
+)
+
+# Dodanie legendy
+legend("bottomright", legend = c("Ryzyko portfela", "Stopa zwrotu portfela", "Efektywność portfela"),
+       fill = bar_colors, bty = "n")
+
+
+
+```
 
