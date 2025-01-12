@@ -189,6 +189,26 @@ minimalnyportfel <- results[results$des == "Minimal risk portfolio",]
 makefportfel <- results[results$des == "Maximum efficiency portfolio",]
 ```
 
+```{r}
+# portfel z dywersyfikacją prostą --- wszystkie wagi podzielone równo
+
+w_equal <- c(0.25, 0.25, 0.25, 0.25) 
+ip_equal <- sum(w_equal * c(mean(stopyCCC), mean(stopyVNQ), mean(stopy_sok), mean(stopyLVMH)))
+sdp_equal <- sqrt(
+  sum((w_equal^2) * c(s1^2, s2^2, s3^2, s4^2)) +
+  2 * (w_equal[1] * w_equal[2] * s1 * s2 * corr12 +
+       w_equal[1] * w_equal[3] * s1 * s3 * corr13 +
+       w_equal[1] * w_equal[4] * s1 * s4 * corr14 +
+       w_equal[2] * w_equal[3] * s2 * s3 * corr23 +
+       w_equal[2] * w_equal[4] * s2 * s4 * corr24 +
+       w_equal[3] * w_equal[4] * s3 * s4 * corr34)
+)
+sharp_equal <- (ip_equal - rf) / sdp_equal
+
+```
+
+
+
 
 ```{r}
 # wykresy pie
@@ -201,13 +221,13 @@ pie(max_wektor, labels = c("CCC: 55%", "OJ=F: 45%"), col = c("navy", "peachpuff"
 
 
 ```{r}
-# Dane dla portfeli jednoelementowych
+
 asset_names <- c("CCC", "VNQ", "OrangeJuice", "LVMH")
 portfolio_risk <- c(s1, s2, s3, s4)            # Ryzyko (SD)
-portfolio_return <- c(mean(stopyCCC), mean(stopyVNQ), mean(stopy_sok), mean(stopyLVMH))  # Stopa zwrotu (Mean)
-portfolio_efficiency <- portfolio_return / portfolio_risk  # Efektywność (Sharpe, RF = 0)
+portfolio_return <- c(mean(stopyCCC), mean(stopyVNQ), mean(stopy_sok), mean(stopyLVMH))
+portfolio_efficiency <- portfolio_return / portfolio_risk 
 
-# Skala procentowa
+
 portfolio_risk <- portfolio_risk * 100
 portfolio_return <- portfolio_return * 100
 portfolio_efficiency <- portfolio_efficiency * 100
@@ -215,27 +235,23 @@ portfolio_efficiency <- portfolio_efficiency * 100
 
 portfolio_data <- rbind(portfolio_risk, portfolio_return, portfolio_efficiency)
 
-# Kolory dla słupków
+
 bar_colors <- c("orange", "navy", "peachpuff")
 
-# Tworzenie wykresu słupkowego
 bp <- barplot(
   portfolio_data, beside = TRUE, col = bar_colors, ylim = c(min(portfolio_efficiency) - 5, max(portfolio_risk) + 5),
   names.arg = asset_names, las = 1,
   ylab = "Procent (%)", main = "Portfele jednoelementowe"
 )
 
-# Dodanie etykiet na słupki
-# bp zawiera pozycje środkowe słupków
 text(
-  x = as.vector(bp),  # Pozycje środkowe słupków
-  y = as.vector(portfolio_data),  # Wartości danych
-  labels = paste0(round(as.vector(portfolio_data), 2), "%"),  # Etykiety (zaokrąglone wartości)
-  pos = ifelse(as.vector(portfolio_data) >= 0, 3, 1),  # Umiejscowienie nad/poniżej słupka
+  x = as.vector(bp), 
+  y = as.vector(portfolio_data),
+  labels = paste0(round(as.vector(portfolio_data), 2), "%"),
+  pos = ifelse(as.vector(portfolio_data) >= 0, 3, 1), 
   cex = 0.8, col = "black"
 )
 
-# Dodanie legendy
 legend("bottomright", legend = c("Ryzyko portfela", "Stopa zwrotu portfela", "Efektywność portfela"),
        fill = bar_colors, bty = "n")
 
