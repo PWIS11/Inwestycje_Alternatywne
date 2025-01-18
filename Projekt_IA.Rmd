@@ -262,3 +262,207 @@ legend("bottomright", legend = c("Ryzyko portfela", "Stopa zwrotu portfela", "Ef
 
 ```
 
+## Krótka sprzedaż
+
+Krótka sprzedaż to technika inwestycyjna, która umożliwia zarabianie na spadkach wartości aktywów. Strategia ta polega na pożyczeniu papierów wartościowych, które inwestor sprzedaje na rynku z zamiarem ich późniejszego odkupienia po niższej cenie. Zarobek pochodzi z różnicy między ceną sprzedaży a ceną odkupu, pomniejszonej o koszty pożyczki i prowizje. Krótka sprzedaż jest często stosowana przez inwestorów, którzy przewidują spadek cen określonych aktywów i chcą skorzystać z tej tendencji.
+
+#### Znaczenie krótkiej sprzedaży dla inwestorów:
+
+1.  **Zarządzanie ryzykiem:**
+
+    -   Strategia ta jest wykorzystywana jako zabezpieczenie przed stratami w portfelach inwestycyjnych, szczególnie w okresach dużej zmienności rynkowej.
+
+2.  **Osiąganie zysków w trudnych warunkach rynkowych:**
+
+    -   Krótka sprzedaż pozwala inwestorom na generowanie zysków w okresach spadków rynkowych, co jest szczególnie istotne w czasie bessy.
+
+3.  **Zwiększenie efektywności rynku:**
+
+    -   Sprzedaż krótka przyczynia się do eliminacji przeszacowań na rynku, poprawiając precyzję wyceny aktywów.
+
+4.  **Elastyczność strategii:**
+
+    -   Dzięki możliwości zarabiania na spadkach, inwestorzy zyskują szerszy wachlarz narzędzi do budowy zróżnicowanych portfeli inwestycyjnych.
+
+#### Ryzyka związane z krótką sprzedażą:
+
+-   **Nieograniczone ryzyko strat:**
+
+    -   W przeciwieństwie do tradycyjnych strategii inwestycyjnych, straty w krótkiej sprzedaży mogą być nieograniczone, ponieważ ceny aktywów mogą rosnąć w nieskończoność.
+
+-   **Koszty transakcji:**
+
+    -   Pożyczanie aktywów wiąże się z dodatkowymi kosztami, które mogą znacząco wpłynąć na końcowy wynik finansowy.
+
+-   **Ryzyko gwałtownego wzrostu cen (short squeeze):**
+
+    -   W sytuacji nagłego wzrostu cen, inwestorzy sprzedający krótko mogą być zmuszeni do szybkiego zamknięcia swoich pozycji, co prowadzi do dużych strat.
+
+Krótka sprzedaż, choć wymagająca doświadczenia i dobrej znajomości rynku, jest cennym narzędziem w rękach inwestorów, którzy chcą zwiększyć elastyczność swoich strategii i wykorzystać zmienność rynkową. Przy odpowiednim zarządzaniu ryzykiem może stać się istotnym elementem nowoczesnego portfela inwestycyjnego.
+
+## Generowanie wag dla zmiennych przy założeniu short selling
+
+```{r}
+step <- 0.01
+range_values <- seq(-1, 1, by = step)
+
+valid_combinations <- list()
+
+counter <- 1
+for (W1 in range_values) {
+  for (W2 in range_values) {
+    for (W3 in range_values) {
+      W4 <- 1 - (W1 + W2 + W3)
+      # Check if W4 is within the valid range
+      if (W4 >= -1 && W4 <= 1) {
+        valid_combinations[[counter]] <- c(W1, W2, W3, W4)
+        counter <- counter + 1
+      }
+    }
+  }
+}
+
+weights_4inv_ss <- do.call(rbind, valid_combinations)
+colnames(weights_4inv_ss) <- c("W1", "W2", "W3", "W4")
+
+weights_4inv_ss <- round(weights_4inv_ss, 2)
+
+output_file_path <- "weights_4inv_ss.txt"
+write.table(weights_4inv_ss, file = output_file_path, row.names = FALSE, col.names = TRUE, sep = "\t", quote = FALSE)
+
+cat("File saved as:", output_file_path, "\n")
+```
+
+
+
+```{r}
+# Krótka sprzedaż
+
+#=niepotrzebne/zrobione przez Izę
+
+#importing data
+#ror <- read.csv("ror.csv", sep=";", dec=",")
+#We choose three assets for further analysis 
+#portfolio4 <- ror[c(1, 2, 3, 4)]
+#Variables for all calculations
+
+#wig <- portfolio4$WIG
+#gold <- portfolio4$Gold
+#silver <- portfolio4$Silver
+#platinium <- portfolio4$Platinium
+
+#stopy_sok <- returns_data[,3]
+#stopyCCC <- returns_data[,1]
+#stopyVNQ <- returns_data[,2]
+#stopyLVMH <- returns_data[,4]
+
+#importing weights from file – wzięte te z SS
+weights_4inv_ss <- read.table("weights_4inv_ss.txt",dec=",", header=TRUE, quote="\"",stringsAsFactors=FALSE)
+w1ss <- weights_4inv_ss$W1
+w1ss <- as.numeric(w1ss)
+w2ss <- weights_4inv_ss$W2
+w2ss <- as.numeric(w2ss)
+w3ss <- weights_4inv_ss$W3
+w3ss <- as.numeric(w3ss)
+w4ss <- weights_4inv_ss$W4
+w4ss <- as.numeric(w4ss)
+
+#calculating SD
+#s1 <- sd(stopyCCC)
+#s2 <- sd(stopyVNQ)
+#s3 <- sd(stopy_sok)
+#s4 <- sd(stopyLVMH)
+
+#Calculating corellation
+#corr12 <- cor(stopyCCC,stopyVNQ)
+#corr13 <- cor(stopyCCC,stopy_sok)
+#corr14 <- cor(stopyCCC, stopyLVMH)
+#corr23 <- cor(stopyVNQ, stopy_sok)
+#corr24 <- cor(stopyVNQ, stopyLVMH)
+#corr34 <- cor(stopy_sok, stopyLVMH)
+
+#calculating ip
+iportfolioss <- mean(stopyCCC)*w1ss+mean(stopyVNQ)*w2ss+mean(stopy_sok)*w3ss+mean(stopyLVMH)*w4ss
+
+#portfolio risk
+sdpss <- (w1ss^2*s1^2 + w2ss^2*s2^2 + w3ss^2*s3^2 + w4ss^2*s4^2 + 2*w1ss*w2ss*s1*s2*corr12 + 2*w1ss*w3ss*s1*s3*corr13 + 2*w1ss*w4ss*s1*s4*corr14 + 
+          2*w2ss*w3ss*s2*s3*corr23 + 2*w2ss*w4ss*s2*s4*corr24 + 2*w3ss*w4ss*s3*s4*corr34)^0.5
+#calculating effectivness
+
+#rf <- 0.1*mean(stopyCCC)
+
+sharpss <- (iportfolioss-rf)/sdpss
+
+#preparing df with results
+datass <- cbind(w1ss, w2ss, w3ss, w4ss, iportfolioss, sdpss, sharpss)
+datass <- as.data.frame(datass)
+
+#finding interesting portfolios
+min.riskss         <- datass[which.min(datass$sdpss), ]
+max.effectivnessss <- datass[which.max(datass$sharpss), ]
+max.ipss           <- datass[which.max(datass$iportfolioss), ]
+max.w1ss           <- datass[which.max(datass$w1ss), ]
+max.w2ss           <- datass[which.max(datass$w2ss), ]
+max.w3ss           <- datass[which.max(datass$w3ss), ]
+max.w4ss           <- datass[which.max(datass$w4ss), ]
+
+des <- c(
+  "Minimal risk portfolio", 
+  "Maximum efficiency portfolio", 
+  "Maximum rate of return portfolio", 
+  "Max weight one portfolio", 
+  "Max weight two portfolio", 
+  "Max weight three portfolio", 
+  "Max weight four portfolio"
+)
+
+#Creating table with results 3 portfolios and showing results in console
+resultss <- cbind(
+  rbind(min.riskss, max.effectivnessss, max.ipss, max.w1ss, max.w2ss, max.w3ss, max.w4ss),
+  des
+)
+resultss
+write.csv(x=resultss, file = "resultss.csv", row.names=FALSE)
+# Tworzenie wykresu i poprawki
+plot(sdpss, iportfolioss, type = "p", col = "red", pch = 16, 
+     xlab = "Ryzyko portfela", 
+     ylab = "Stopa zwrotu portfela", 
+     main = "Zbiór możliwości inwestycyjnych z uwzględnieniem krótkiej sprzedaży", 
+     cex.main = 1.5, cex.lab = 1.2, cex.axis = 1)
+
+# Filtrowanie danych bez SS
+datawithoutSS <- subset(datass, datass$w1ss >= 0 & datass$w2ss >= 0 & datass$w3ss >= 0 & datass$w4ss >= 0)
+
+# Dodawanie punktów do wykresu
+points(datawithoutSS$sdpss, datawithoutSS$iportfolioss, col = "purple", pch = 16)
+
+# Dodawanie siatki
+grid(col = "gray", lty = "dotted")
+
+# Dodawanie punktów specyficznych portfeli
+points(min.riskss$sdpss, min.riskss$iportfolioss, pch = 19, col = "green")
+points(max.effectivnessss$sdpss, max.effectivnessss$iportfolioss, pch = 19, col = "blue")
+points(max.ipss$sdpss, max.ipss$iportfolioss, pch = 19, col = "yellow")
+
+# Punkty dla portfeli jednoelementowych
+points(max.w1ss$sdpss, max.w1ss$iportfolioss, pch = 19, col = "black")
+points(max.w2ss$sdpss, max.w2ss$iportfolioss, pch = 19, col = "black")
+points(max.w3ss$sdpss, max.w3ss$iportfolioss, pch = 19, col = "black")
+points(max.w4ss$sdpss, max.w4ss$iportfolioss, pch = 19, col = "black")
+
+# Dodawanie legendy
+legend("topright", 
+       legend = c("Opportunity set with SS", "Opportunity set without SS", "Minimum risk portfolio", 
+                  "Maximum efficiency portfolio", "Maximum RoR portfolio", "One-element portfolio"), 
+       pch = 19, 
+       col = c("red", "purple", "green", "blue", "yellow", "black"), 
+       bty = "n", # Usunięcie obramowania legendy
+       cex = 0.9)
+
+# Zapis wykresu do pliku
+dev.copy(png, filename = "plotss.png", width = 1000, height = 800, res = 300)
+dev.off()
+
+
+```
+
