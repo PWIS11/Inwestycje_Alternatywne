@@ -145,7 +145,7 @@ iportfolio <- mean(stopyCCC)*w1+mean(stopyVNQ)*w2+mean(stopy_sok)*w3+mean(stopyL
 sdp <- (w1^2*s1^2 + w2^2*s2^2 + w3^2*s3^2 + w4^2*s4^2 + 2*w1*w2*s1*s2*corr12 + 2*w1*w3*s1*s3*corr13 + 2*w1*w4*s1*s4*corr14 + 
           2*w2*w3*s2*s3*corr23 + 2*w2*w4*s2*s4*corr24 + 2*w3*w4*s3*s4*corr34)^0.5
 #calculating effectivness
-rf <- 0.0
+rf <- 0.1*mean(stopyCCC)
 sharp <- (iportfolio-rf)/sdp
 #preparing df with results
 data <- cbind(w1, w2, w3, w4, iportfolio, sdp, sharp)
@@ -189,6 +189,18 @@ minimalnyportfel <- results[results$des == "Minimal risk portfolio",]
 makefportfel <- results[results$des == "Maximum efficiency portfolio",]
 ```
 
+
+```{r}
+# wykresy pie
+min_wektor <- c(minimalnyportfel$w1,minimalnyportfel$w2,minimalnyportfel$w3,minimalnyportfel$w4)
+max_wektor <- c(makefportfel$w1,makefportfel$w2,makefportfel$w3,makefportfel$w4)
+
+pie(min_wektor, labels = c("CCC: 6%", "VNQ: 61%", "OJ=F: 16%", "LVMH: 17%"), col = c("navy", "peachpuff", "orange", "purple4"))
+pie(max_wektor, labels = c("CCC: 55%", "OJ=F: 45%"), col = c("navy", "peachpuff", "orange", "purple4"))
+```
+
+
+
 ```{r}
 # portfel z dywersyfikacją prostą --- wszystkie wagi podzielone równo
 
@@ -209,15 +221,6 @@ sharp_equal <- (ip_equal - rf) / sdp_equal
 
 
 
-
-```{r}
-# wykresy pie
-min_wektor <- c(minimalnyportfel$w1,minimalnyportfel$w2,minimalnyportfel$w3,minimalnyportfel$w4)
-max_wektor <- c(makefportfel$w1,makefportfel$w2,makefportfel$w3,makefportfel$w4)
-
-pie(min_wektor, labels = c("CCC: 6%", "VNQ: 61%", "OJ=F: 16%", "LVMH: 17%"), col = c("navy", "peachpuff", "orange", "purple4"))
-pie(max_wektor, labels = c("CCC: 55%", "OJ=F: 45%"), col = c("navy", "peachpuff", "orange", "purple4"))
-```
 
 
 ```{r}
